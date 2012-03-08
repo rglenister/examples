@@ -5,16 +5,11 @@ import scala.annotation.tailrec
 
 
 case class ATM(availableCash: Int) {
-  def withdraw(amount: Int) = if (availableCash >= amount) Some(ATM(availableCash - amount)) else None
+  def withdraw(amount: Int) = Some(ATM(availableCash - amount)) filter { _.availableCash >= 0 }
 }
 
 case class Account(accountNumber: Int, balance: Int, overdraftFacility: Int) {
-  def availableBalance = balance + overdraftFacility
-  def withdraw(amount: Int) = {
-    if (availableBalance >= amount)
-      Some(Account(accountNumber, balance - amount, overdraftFacility))
-    else None
-  }
+  def withdraw(amount: Int) = Some(Account(accountNumber, balance - amount, overdraftFacility)) filter { _.balance >= overdraftFacility }
 }
 
 case class ATMAndAccount(atm: ATM, account: Account)
@@ -28,11 +23,11 @@ object ATM {
     processBlock(ATM(0))
   }
   
-  val AtmRefillHeaderRe = """^([0-9]+)$""".r
-  val AccountHeaderLine1Re = """^([0-9]{8}) ([0-9]{4}) ([0-9]{4})$""".r
-  val AccountHeaderLine2Re = """^([0-9]+) ([0-9]+)$""".r
-  val BalanceRe = """^B$""".r
-  val WithdrawalRe = """^W ([0-9]+)$""".r
+  val AtmRefillHeaderRe = """^([0-9]+)$"""r
+  val AccountHeaderLine1Re = """^([0-9]{8}) ([0-9]{4}) ([0-9]{4})$"""r
+  val AccountHeaderLine2Re = """^([0-9]+) ([0-9]+)$"""r
+  val BalanceRe = """^B$"""r
+  val WithdrawalRe = """^W ([0-9]+)$"""r
   
   def readLine = {
     val s = Console.readLine
@@ -40,9 +35,7 @@ object ATM {
   }
   
   @tailrec
-  def skipToNextBlock {
-    if (!readLine.isEmpty()) skipToNextBlock
-  }
+  def skipToNextBlock { if (!readLine.isEmpty()) skipToNextBlock }
   
   @tailrec
   def processBlock(atm: ATM): Option[ATM] = {
