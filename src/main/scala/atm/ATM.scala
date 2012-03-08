@@ -9,7 +9,7 @@ case class ATM(availableCash: Int) {
 }
 
 case class Account(accountNumber: Int, balance: Int, overdraftFacility: Int) {
-  def withdraw(amount: Int) = Some(Account(accountNumber, balance - amount, overdraftFacility)) filter { _.balance >= overdraftFacility }
+  def withdraw(amount: Int) = Some(Account(accountNumber, balance - amount, overdraftFacility)) filter { -overdraftFacility <= _.balance }
 }
 
 case class ATMAndAccount(atm: ATM, account: Account)
