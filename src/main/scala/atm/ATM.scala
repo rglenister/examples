@@ -12,8 +12,6 @@ case class Account(accountNumber: Int, balance: Int, overdraftFacility: Int) {
   def withdraw(amount: Int) = Some(Account(accountNumber, balance - amount, overdraftFacility)) filter { -overdraftFacility <= _.balance }
 }
 
-case class ATMAndAccount(atm: ATM, account: Account)
-
 object ATM {
   
   def main(args: Array[String]): Unit = {
@@ -38,7 +36,7 @@ object ATM {
   def skipToNextBlock { if (!readLine.isEmpty()) skipToNextBlock }
   
   @tailrec
-  def processBlock(atm: ATM): Option[ATM] = {
+  def processBlock(atm: ATM): ATM = {
     
     def processAtmRefillBlock: PartialFunction[String, ATM] = {
       case header if (AtmRefillHeaderRe.findFirstIn(header) != None) => readLine; ATM(atm.availableCash + header.toInt) 
@@ -60,34 +58,34 @@ object ATM {
     
     val header = readLine
     if (!header.isEmpty) processBlock((processAtmRefillBlock orElse processAccountBlock)(header))     
-    else None
+    else atm
   }
 
   @tailrec
   def processUserCommand(atm: ATM, account: Account): ATM = {
     
-    def processBalanceEnquiry: PartialFunction[String, ATMAndAccount] = {
+    def processBalanceEnquiry: PartialFunction[String, (ATM, Account)] = {
       case line if (BalanceRe.findFirstIn(line) != None) => {
-        println(account.balance); ATMAndAccount(atm, account)
+        println(account.balance); (atm, account)
       }
     }
   
-    def processWithdrawal: PartialFunction[String, ATMAndAccount] = {    
+    def processWithdrawal: PartialFunction[String, (ATM, Account)] = {    
       case line if (WithdrawalRe.findFirstIn(line) != None) => {
         val WithdrawalRe(amnt) = line
         val amount = amnt.toInt
         (atm.withdraw(amount), account.withdraw(amount)) match {
-          case (_, None) => println("FUNDS_ERR"); ATMAndAccount(atm, account)
-		  case (None, Some(account)) => println("ATM_ERR"); ATMAndAccount(atm, account)
-		  case (Some(nextAtm), Some(nextAccount)) => println(nextAccount.balance); ATMAndAccount(nextAtm, nextAccount)
+          case (_, None) => println("FUNDS_ERR"); (atm, account)
+		  case (None, Some(account)) => println("ATM_ERR"); (atm, account)
+		  case (Some(nextAtm), Some(nextAccount)) => println(nextAccount.balance); (nextAtm, nextAccount)
         }
       }
     }
     
     val line = readLine
     if (!line.isEmpty) {
-      val atmAndAccount = (processBalanceEnquiry orElse processWithdrawal)(line) 
-      processUserCommand(atmAndAccount.atm, atmAndAccount.account)
+      val (atm, account) = (processBalanceEnquiry orElse processWithdrawal)(line) 
+      processUserCommand(atm, account)
     } else atm
   }
 }  
